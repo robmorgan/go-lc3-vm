@@ -6,12 +6,10 @@ Based on an article: https://justinmeiners.github.io/lc3-vm/.
 
 https://en.wikipedia.org/wiki/LC-3
 
-# Download the ROMs
+# TODO
 
-Download the assembled ROMs.
-
-    wget https://justinmeiners.github.io/lc3-vm/bin/rogue.obj
-    wget https://justinmeiners.github.io/lc3-vm/bin/2048.obj
+- [ ] Fix Trap Codes for displaying output.
+- [ ] Add a flag for debug output
 
 # LICENSE
 
