@@ -245,9 +245,11 @@ func (c *CPU) EmulateInstruction() (err error) {
 		if bit11 == 1 {
 			PCoffset11 := extract2C(instr, 10, 0)
 			pc += PCoffset11 + 1
+			log.Println(fmt.Sprintf("0x%04x: JSR %d,%d", c.PC, c.Reg[7], PCoffset11))
 		} else {
 			baseR := extract2C(instr, 8, 6)
 			pc = c.Reg[baseR]
+			log.Println(fmt.Sprintf("0x%04x: JSR %d,%d", c.PC, c.Reg[7], baseR))
 		}
 	case OpLDR:
 		dr := extract1C(instr, 11, 9)
@@ -279,30 +281,65 @@ func (c *CPU) EmulateInstruction() (err error) {
 			fmt.Printf("%c", chr)
 			//fmt.Printf("%c\n", ch)
 		case TrapPUTS:
-			//c := c.Memory + c.Reg[0]
-			address := 0x3000 + c.Reg[0]
+			address := c.Reg[0]
+			//address := uint16(0x3103)
+			//works: address := uint16(0x3080)
+			//slab := c.Memory[0x3000:address]
+			//slab := c.Memory[0x3000:0x3054]
 			//log.Println("Puts: REG0 %d", address)
 			//uint16(c.Memory[address])
 			//c := c.ReadMemory(c.Reg[0])
-			log.Println(fmt.Sprintf("Address: 0x%04x", address))
-			foo := c.Memory[0x3000+165 : 0x3000+165+15]
+			log.Println(fmt.Sprintf("PUTS Address: 0x%04x %c", address, c.ReadMemory(address)))
+			//foo := c.Memory[0x3000+165 : 0x3000+165+15]
 
-			for _, num := range foo {
-				fmt.Println("sum:", rune(num))
-			}
+			//	for i, r := range slab {
+			//		if r != unicode.ReplacementChar {
+			//			// Print the position of the rune's start byte in the string
+			//			// and the value of the rune as a Unicode code point.
+			//			fmt.Printf("\t%2d: %c\n", i, rune(r))
+			//		} else {
+			//			// A byte that doesn't form a part of a rune was detected within the string.
+			//			// Print the position of the byte in the string
+			//			// and the integer value of the byte in hexadecimal.
+			//			fmt.Printf("\t%2d: %02X    (not a rune)\n", i, slab[i])
+			//		}
+			//	}
+
+			//for _, num := range slab {
+			//	fmt.Println("sum:", rune(num))
+			//}
 
 			var chr uint16
-			var i uint16
+			var i uint16 = 1
+			//var byteArr []byte
 			for ok := true; ok; ok = (chr != 0x0) {
-				//chr = c.ReadMemory(address + i)
-				chr = c.Memory[address+i]
-				fmt.Println("loop called chr: %d", chr)
-				fmt.Printf("XXX:%c", chr)
+				chr = c.Memory[address+i] & 0xFFFF
+				//chr += c.Memory[address+i+1]
+
+				//log.Println("char is: %d", chr)
+				//log.Println(fmt.Sprintf("Address: 0x%04x", address+i))
+
+				//fmt.Printf("\t%2d: %c\n", i, rune(r))
+				//chr = slab[i]
+				//  c.ReadMemory(address + i)
+				//	chr = c.Memory[address+i]
+				//	fmt.Println("loop called chr: %d", chr)
+				//fmt.Printf("XXX:%c", rune(chr))
+				//fmt.Printf("\t%2d: %c\n", i, rune(r))
+				//printBytes(rune(chr))
+				//fmt.Printf("\t%2d: %U %c\n", i, chr, rune(chr))
+				fmt.Printf("%c", rune(chr))
+
+				//fmt.Printf("Byte %3d: %3d %c\n", i, chr, chr)
+				//fmt.Printf("\t%2d: %U %c\n", i, chr, chr)
+
+				//fmt.Sprintln("%c %U", chr, chr)
+
 				i++
 			}
 
-			fmt.Println("Block called")
-			os.Exit(1)
+			//fmt.Println("Terminating VM")
+			//os.Exit(1)
 			//for c > 0 {
 			//	chr := rune(c)
 			//	fmt.Printf("%c", chr)
@@ -326,6 +363,16 @@ func (c *CPU) EmulateInstruction() (err error) {
 	// increment the program counter
 	c.PC = pc
 	return
+}
+
+func printBytes(s string) {
+	fmt.Println("printBytes:")
+	sbytes := []byte(s)
+	for i, b := range sbytes {
+		// Print the position of the byte in the string
+		// and the integer value of the byte in hexadecimal.
+		fmt.Printf("\t%2d: %2X\n", i, b)
+	}
 }
 
 func (c *CPU) SetCC(data uint16) {
