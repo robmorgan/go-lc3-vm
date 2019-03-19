@@ -8,7 +8,7 @@ https://en.wikipedia.org/wiki/LC-3
 
 # TODO
 
-- [ ] Fix Trap Codes for displaying output.
+- [x] Fix Trap Routines for displaying output.
 - [ ] Add a flag for debug output
 
 # LICENSE
