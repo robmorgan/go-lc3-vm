@@ -9,6 +9,8 @@ https://en.wikipedia.org/wiki/LC-3
 # TODO
 
 - [x] Fix Trap Routines for displaying output.
+- [x] Fixed STI OpCode
+- [ ] Migrate to Termbox for key input
 - [ ] Add a flag for debug output
 
 # LICENSE

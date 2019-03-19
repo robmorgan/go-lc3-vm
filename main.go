@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"os/exec"
 )
 
 func main() {
@@ -17,9 +18,11 @@ func main() {
 	//runtime.LockOSThread()
 
 	log.Printf("Starting LC3-VM")
-	path := "rom/2048.obj"
 
 	// load the ROM file
+	path := "rom/2048.obj"
+	log.Printf("Loading Program: %s", path)
+
 	// read the rom file into a buffer
 	mem, err := RetrieveROM(path)
 	if err != nil {
@@ -27,13 +30,26 @@ func main() {
 		panic(err)
 	}
 
+	//err = termbox.Init()
+	//if err != nil {
+	//	panic(err)
+	//}
+	//defer termbox.Close()
+
+	//eventQueue := make(chan termbox.Event)
+	//go func() {
+	//	for {
+	//		eventQueue <- termbox.PollEvent()
+	//	}
+	//}()
+
 	// init the CPU
 	fmt.Println("Boot VM")
 	cpu := NewCPU()
 	cpu.Memory = mem
 	cpu.Reset()
-	cpu.Run()
 
+	cpu.Run()
 	fmt.Println("Exiting")
 }
 
@@ -96,4 +112,23 @@ func RetrieveROM(filename string) ([65536]uint16, error) {
 	}
 
 	return m, err
+}
+
+func readStdin(out chan string, in chan bool) {
+	//no buffering
+	exec.Command("stty", "-f", "/dev/tty", "cbreak", "min", "1").Run()
+	//no visible output
+	exec.Command("stty", "-f", "/dev/tty", "-echo").Run()
+
+	var b []byte = make([]byte, 1)
+	for {
+		select {
+		case <-in:
+			return
+		default:
+			os.Stdin.Read(b)
+			fmt.Printf(">>> %v: ", b)
+			out <- string(b)
+		}
+	}
 }

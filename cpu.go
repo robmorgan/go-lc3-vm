@@ -1,9 +1,11 @@
 package main
 
+import "C"
 import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"time"
 )
 
@@ -99,6 +101,7 @@ func (c *CPU) Run() (err error) {
 	fmt.Println("Loaded memory: ", len(c.Memory))
 
 	for {
+		//c.ProcessInput()
 		err = c.Step()
 		if err != nil || c.runState == RunStateStopped {
 			break
@@ -134,9 +137,38 @@ func (c *CPU) Stop() (err error) {
 	return
 }
 
-// Read memory
+// ProcessInput handles keyboard input
+func (c *CPU) ProcessInput() (err error) {
+	// disable input buffering
+	exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
+	// do not display entered characters on the screen
+	exec.Command("stty", "-F", "/dev/tty", "-echo").Run()
+	// restore the echoing state when exiting
+	defer exec.Command("stty", "-F", "/dev/tty", "echo").Run()
+
+	var b = make([]byte, 1)
+	for {
+		os.Stdin.Read(b)
+		log.Println(fmt.Sprintf("0x%04x: Got byte: %s", c.PC, string(b)))
+	}
+	return
+}
+
+// ReadMemory reads an address from memory
 func (c *CPU) ReadMemory(address uint16) uint16 {
-	//log.Printf("Reading address: 0x%04X", address)
+	//log.Printf("Reading memory address: 0x%04X", address)
+	if address == MemRegKBSR {
+		// get ascii key code
+		ascii := 0xFF87 // yes
+		//ascii, _, _ := getChar()
+		//log.Println(fmt.Sprintf("0x%04x: getChar %d", c.PC, ascii))
+		if ascii > 0 { // TODO - should be triggered by key down
+			c.Memory[MemRegKBSR] = (1 << 15)
+			c.Memory[MemRegKBDR] = uint16(ascii)
+		} else {
+			c.Memory[MemRegKBSR] = 0
+		}
+	}
 
 	switch {
 	case address <= 65535:
@@ -148,7 +180,7 @@ func (c *CPU) ReadMemory(address uint16) uint16 {
 	return 0
 }
 
-// Write memory
+// WriteMemory writes to an address in memory
 func (c *CPU) WriteMemory(address uint16, value uint16) {
 	switch {
 	case address <= 65535:
@@ -229,27 +261,25 @@ func (c *CPU) EmulateInstruction() (err error) {
 		PCoffset9 := extract2C(instr, 8, 0)
 		c.Reg[dr] = c.ReadMemory(c.PC + PCoffset9)
 		c.SetCC(c.Reg[dr])
-		log.Println(fmt.Sprintf("0x%04x: LD R%d,%d", c.PC, dr, PCoffset9))
+		//log.Println(fmt.Sprintf("0x%04x: LD R%d,%d", c.PC, dr, PCoffset9))
 	case OpLDI:
 		dr := extract1C(instr, 11, 9)
 		PCoffset9 := extract2C(instr, 8, 0)
-		c.Reg[dr] = c.ReadMemory(c.PC + PCoffset9)
+		addr := c.ReadMemory(pc + PCoffset9)
+		c.Reg[dr] = c.ReadMemory(addr)
 		c.SetCC(c.Reg[dr])
-	case OpST:
-		sr := extract1C(instr, 11, 9)
-		PCoffset9 := extract2C(instr, 8, 0)
-		c.WriteMemory(c.PC+PCoffset9, c.Reg[sr])
+		//log.Println(fmt.Sprintf("0x%04x: LDI R%d,0x%04x", c.PC, dr, addr))
 	case OpJSR:
 		bit11 := extract1C(instr, 11, 11)
-		c.Reg[7] = c.PC + 1
+		c.Reg[7] = pc
 		if bit11 == 1 {
 			PCoffset11 := extract2C(instr, 10, 0)
-			pc += PCoffset11 + 1
-			log.Println(fmt.Sprintf("0x%04x: JSR %d,%d", c.PC, c.Reg[7], PCoffset11))
+			pc += PCoffset11
+			//log.Println(fmt.Sprintf("0x%04x: JSR BIT1 0x%04x,%d", c.PC, c.Reg[7], PCoffset11))
 		} else {
 			baseR := extract2C(instr, 8, 6)
 			pc = c.Reg[baseR]
-			log.Println(fmt.Sprintf("0x%04x: JSR %d,%d", c.PC, c.Reg[7], baseR))
+			//log.Println(fmt.Sprintf("0x%04x: JSR BASER 0x%04x,%d", c.PC, c.Reg[7], baseR))
 		}
 	case OpLDR:
 		dr := extract1C(instr, 11, 9)
@@ -262,16 +292,27 @@ func (c *CPU) EmulateInstruction() (err error) {
 		PCoffset9 := extract2C(instr, 8, 0)
 		c.Reg[dr] = c.PC + PCoffset9
 		c.SetCC(c.Reg[dr])
-		log.Println(fmt.Sprintf("0x%04x: LEA R%d,%d", c.PC, dr, PCoffset9))
+		//log.Println(fmt.Sprintf("0x%04x: LEA R%d,%d", c.PC, dr, PCoffset9))
+	case OpST:
+		sr := extract1C(instr, 11, 9)
+		PCoffset9 := extract2C(instr, 8, 0)
+		c.WriteMemory(pc+PCoffset9, c.Reg[sr])
+		//log.Println(fmt.Sprintf("0x%04x: ST R%d,%d", c.PC, sr, PCoffset9))
+	case OpSTI:
+		sr := extract1C(instr, 11, 9)
+		PCoffset9 := extract2C(instr, 8, 0)
+		c.WriteMemory(c.ReadMemory(pc+PCoffset9), c.Reg[sr])
 	case OpSTR:
-		//sr := extract1C(instr, 11, 9)
-		//baseR := extract1C(instr, 8, 6)
+		sr := extract1C(instr, 11, 9)
+		baseR := extract1C(instr, 8, 6)
 		offset6 := extract2C(instr, 5, 0)
-		c.WriteMemory(c.Reg[1]+offset6, c.Reg[0])
+		c.WriteMemory(c.Reg[baseR]+offset6, c.Reg[sr])
+		//log.Println(fmt.Sprintf("0x%04x: STR R%d 0x%04x,0x%04x", c.PC, sr, c.Reg[baseR]+offset6, c.Reg[sr]))
 	case OpTRAP:
 		trapCode := instr & 0xFF
 		switch trapCode {
 		case TrapGETC:
+			log.Fatalf("GETC Trap code not implemented: 0x%04X", instr)
 			// read a single ASCII character
 			ascii, _, _ := getChar()
 			c.Reg[0] = uint16(ascii)
@@ -282,15 +323,7 @@ func (c *CPU) EmulateInstruction() (err error) {
 			//fmt.Printf("%c\n", ch)
 		case TrapPUTS:
 			address := c.Reg[0]
-			//address := uint16(0x3103)
-			//works: address := uint16(0x3080)
-			//slab := c.Memory[0x3000:address]
-			//slab := c.Memory[0x3000:0x3054]
-			//log.Println("Puts: REG0 %d", address)
-			//uint16(c.Memory[address])
-			//c := c.ReadMemory(c.Reg[0])
-			log.Println(fmt.Sprintf("PUTS Address: 0x%04x %c", address, c.ReadMemory(address)))
-			//foo := c.Memory[0x3000+165 : 0x3000+165+15]
+			//	log.Println(fmt.Sprintf("0x%04x: PUTS Address: 0x%04x %c", c.PC, address, c.ReadMemory(address)))
 
 			//	for i, r := range slab {
 			//		if r != unicode.ReplacementChar {
@@ -338,6 +371,7 @@ func (c *CPU) EmulateInstruction() (err error) {
 				i++
 			}
 
+			fmt.Printf("\n")
 			//fmt.Println("Terminating VM")
 			//os.Exit(1)
 			//for c > 0 {
@@ -357,10 +391,11 @@ func (c *CPU) EmulateInstruction() (err error) {
 	case OpRES:
 	case OpRTI:
 	default:
-		log.Fatalf("Bad Op Code received: 0x%04X", instr)
+		log.Fatalf("Bad Op Code received: %d", op)
 	}
 
 	// increment the program counter
+	//log.Println(fmt.Sprintf("Setting PC to 0x%04x", pc))
 	c.PC = pc
 	return
 }
