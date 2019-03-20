@@ -259,7 +259,7 @@ func (c *CPU) EmulateInstruction() (err error) {
 	case OpLD:
 		dr := extract1C(instr, 11, 9)
 		PCoffset9 := extract2C(instr, 8, 0)
-		c.Reg[dr] = c.ReadMemory(c.PC + PCoffset9)
+		c.Reg[dr] = c.ReadMemory(pc + PCoffset9)
 		c.SetCC(c.Reg[dr])
 		//log.Println(fmt.Sprintf("0x%04x: LD R%d,%d", c.PC, dr, PCoffset9))
 	case OpLDI:
