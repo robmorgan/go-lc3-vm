@@ -1,12 +1,12 @@
 package main
 
-import "C"
 import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"time"
+
+	"github.com/nsf/termbox-go"
 )
 
 // RunState specifies the current running state of the Processor.
@@ -24,11 +24,11 @@ const (
 
 // CPU is a Processor to emulate the LC-3 CPU.
 type CPU struct {
-	Reg    [8]uint16     // registers
-	PC     uint16        // Program Counter
-	Memory [65536]uint16 // CPU Memory
-	//Memory       []byte        // CPU Memory
+	Reg          [8]uint16     // registers
+	PC           uint16        // Program Counter
+	Memory       [65536]uint16 // CPU Memory
 	CondRegister *CondRegister // Condition Flags Register
+	keyBuffer    []rune        // Key Buffer
 
 	TimerStarted bool
 	TimerStart   time.Time
@@ -55,22 +55,22 @@ const (
 
 // List of OpCodes
 const (
-	OpBR   uint16 = iota // branch
-	OpADD                // add
-	OpLD                 // load
-	OpST                 // store
-	OpJSR                // jump register
-	OpAND                // bitwise and
-	OpLDR                // load register
-	OpSTR                // store register
-	OpRTI                // unused
-	OpNOT                // bitwise not
-	OpLDI                // load indirect
-	OpSTI                // store indrect
-	OpJMP                // jump
-	OpRES                // reserved (unused)
-	OpLEA                // load effective address
-	OpTRAP               // execute trap
+	OpBR   uint16 = iota // 0:  branch
+	OpADD                // 1:  add
+	OpLD                 // 2:  load
+	OpST                 // 3:  store
+	OpJSR                // 4:  jump register
+	OpAND                // 5:  bitwise and
+	OpLDR                // 6:  load register
+	OpSTR                // 7:  store register
+	OpRTI                // 8:  unused
+	OpNOT                // 9:  bitwise not
+	OpLDI                // 10: load indirect
+	OpSTI                // 11: store indrect
+	OpJMP                // 12: jump
+	OpRES                // 13: reserved (unused)
+	OpLEA                // 14: load effective address
+	OpTRAP               // 15: execute trap
 )
 
 // List of Trap codes
@@ -98,17 +98,49 @@ func (c *CPU) Run() (err error) {
 		return errNoProgram
 	}
 
-	fmt.Println("Loaded memory: ", len(c.Memory))
+	eventQueue := make(chan termbox.Event)
+	go func() {
+		for {
+			eventQueue <- termbox.PollEvent()
+		}
+	}()
 
 	for {
-		//c.ProcessInput()
-		err = c.Step()
-		if err != nil || c.runState == RunStateStopped {
-			break
+		select {
+		case ev := <-eventQueue:
+			if ev.Type == termbox.EventKey {
+				log.Println(fmt.Sprintf("Key pressed: %d", ev.Ch))
+				c.keyBuffer = append(c.keyBuffer, ev.Ch)
+				switch {
+				case ev.Ch == 'q' || ev.Key == termbox.KeyEsc || ev.Key == termbox.KeyCtrlC || ev.Key == termbox.KeyCtrlD:
+					instr := c.ReadMemory(c.PC)
+					op := instr >> 12
+
+					log.Println("========= DEBUG OUTPUT ====================")
+					log.Println(fmt.Sprintf("Register 0: 0x%04X", c.Reg[0]))
+					log.Println(fmt.Sprintf("Register 1: 0x%04X", c.Reg[0]))
+					log.Println(fmt.Sprintf("Register 2: 0x%04X", c.Reg[0]))
+					log.Println(fmt.Sprintf("Register 3: 0x%04X", c.Reg[0]))
+					log.Println(fmt.Sprintf("Register 4: 0x%04X", c.Reg[0]))
+					log.Println(fmt.Sprintf("Register 5: 0x%04X", c.Reg[0]))
+					log.Println(fmt.Sprintf("Register 6: 0x%04X", c.Reg[0]))
+					log.Println(fmt.Sprintf("Register 7: 0x%04X", c.Reg[0]))
+					log.Println(fmt.Sprintf("Register 8: 0x%04X", c.Reg[0]))
+					log.Println(fmt.Sprintf("PC: 0x%04X", c.PC))
+					log.Println(fmt.Sprintf("Inst: 0x%04X Op: %d", instr, op))
+					termbox.Flush()
+					getChar()
+					return
+				}
+			}
+		default:
+			err = c.Step()
+			if err != nil || c.runState == RunStateStopped {
+				//break
+				return
+			}
 		}
 	}
-
-	return
 }
 
 // Reset the CPU
@@ -124,10 +156,16 @@ func (c *CPU) Reset() {
 // Step executes the program loaded into memory
 func (c *CPU) Step() (err error) {
 	c.runState = RunStateRunning
+
+	// Store any keypresses since last time.
+	c.ProcessInput()
+
 	//fmt.Println("PC: ", c.PC)
 	c.EmulateInstruction()
 	//Increment MCC
 	c.Memory[0xFFFF]++
+	termbox.Flush()
+	//time.Sleep(1 * time.Second)
 	return
 }
 
@@ -139,17 +177,11 @@ func (c *CPU) Stop() (err error) {
 
 // ProcessInput handles keyboard input
 func (c *CPU) ProcessInput() (err error) {
-	// disable input buffering
-	exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
-	// do not display entered characters on the screen
-	exec.Command("stty", "-F", "/dev/tty", "-echo").Run()
-	// restore the echoing state when exiting
-	defer exec.Command("stty", "-F", "/dev/tty", "echo").Run()
-
-	var b = make([]byte, 1)
-	for {
-		os.Stdin.Read(b)
-		log.Println(fmt.Sprintf("0x%04x: Got byte: %s", c.PC, string(b)))
+	kbsrVal := c.ReadMemory(MemRegKBSR)
+	kbsrReady := ((kbsrVal & 0x8000) == 0)
+	if kbsrReady && len(c.keyBuffer) > 0 {
+		c.WriteMemory(MemRegKBSR, kbsrVal|0x8000)
+		c.WriteMemory(MemRegKBDR, uint16(c.keyBuffer[0]))
 	}
 	return
 }
@@ -157,17 +189,8 @@ func (c *CPU) ProcessInput() (err error) {
 // ReadMemory reads an address from memory
 func (c *CPU) ReadMemory(address uint16) uint16 {
 	//log.Printf("Reading memory address: 0x%04X", address)
-	if address == MemRegKBSR {
-		// get ascii key code
-		ascii := 0xFF87 // yes
-		//ascii, _, _ := getChar()
-		//log.Println(fmt.Sprintf("0x%04x: getChar %d", c.PC, ascii))
-		if ascii > 0 { // TODO - should be triggered by key down
-			c.Memory[MemRegKBSR] = (1 << 15)
-			c.Memory[MemRegKBDR] = uint16(ascii)
-		} else {
-			c.Memory[MemRegKBSR] = 0
-		}
+	if address == MemRegKBDR {
+		c.WriteMemory(MemRegKBSR, c.ReadMemory(MemRegKBSR)&0x7FFF)
 	}
 
 	switch {
@@ -290,7 +313,7 @@ func (c *CPU) EmulateInstruction() (err error) {
 	case OpLEA:
 		dr := extract1C(instr, 11, 9)
 		PCoffset9 := extract2C(instr, 8, 0)
-		c.Reg[dr] = c.PC + PCoffset9
+		c.Reg[dr] = pc + PCoffset9
 		c.SetCC(c.Reg[dr])
 		//log.Println(fmt.Sprintf("0x%04x: LEA R%d,%d", c.PC, dr, PCoffset9))
 	case OpST:
@@ -312,16 +335,21 @@ func (c *CPU) EmulateInstruction() (err error) {
 		trapCode := instr & 0xFF
 		switch trapCode {
 		case TrapGETC:
-			log.Fatalf("GETC Trap code not implemented: 0x%04X", instr)
+			//log.Fatalf("GETC Trap code not implemented: 0x%04X", instr)
 			// read a single ASCII character
-			ascii, _, _ := getChar()
-			c.Reg[0] = uint16(ascii)
+			//ascii, _, _ := getChar()
+			//c.Reg[0] = uint16(ascii)
+			//log.Fatalf("Got keycode: %v", c.keyBuffer[0])
+			//fmt.Println("TrapGETC")
+			c.Reg[0] = uint16(c.keyBuffer[0])
+			//log.Fatalf("Got key code: 0x%04X", ascii)
 		case TrapOUT:
-			//fmt.Println("trapout")
+			fmt.Println("trapout")
 			chr := rune(c.Reg[0])
 			fmt.Printf("%c", chr)
-			//fmt.Printf("%c\n", ch)
+			//fmt.Printf("%c\n", chr)
 		case TrapPUTS:
+			//fmt.Println("TrapPUTS")
 			address := c.Reg[0]
 			//	log.Println(fmt.Sprintf("0x%04x: PUTS Address: 0x%04x %c", c.PC, address, c.ReadMemory(address)))
 

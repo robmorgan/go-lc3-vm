@@ -7,15 +7,16 @@ import (
 	"log"
 	"math"
 	"os"
-	"os/exec"
+
+	"github.com/nsf/termbox-go"
 )
 
 func main() {
-	// we need a parallel OS thread to avoid audio stuttering
-	//runtime.GOMAXPROCS(2)
-
-	// we need to keep OpenGL calls on a single thread
-	//runtime.LockOSThread()
+	err := termbox.Init()
+	if err != nil {
+		panic(err)
+	}
+	defer termbox.Close()
 
 	log.Printf("Starting LC3-VM")
 
@@ -26,25 +27,12 @@ func main() {
 	// read the rom file into a buffer
 	mem, err := RetrieveROM(path)
 	if err != nil {
-		//return nil, err
 		panic(err)
 	}
 
-	//err = termbox.Init()
-	//if err != nil {
-	//	panic(err)
-	//}
-	//defer termbox.Close()
-
-	//eventQueue := make(chan termbox.Event)
-	//go func() {
-	//	for {
-	//		eventQueue <- termbox.PollEvent()
-	//	}
-	//}()
-
 	// init the CPU
 	fmt.Println("Boot VM")
+	termbox.Flush()
 	cpu := NewCPU()
 	cpu.Memory = mem
 	cpu.Reset()
@@ -112,23 +100,4 @@ func RetrieveROM(filename string) ([65536]uint16, error) {
 	}
 
 	return m, err
-}
-
-func readStdin(out chan string, in chan bool) {
-	//no buffering
-	exec.Command("stty", "-f", "/dev/tty", "cbreak", "min", "1").Run()
-	//no visible output
-	exec.Command("stty", "-f", "/dev/tty", "-echo").Run()
-
-	var b []byte = make([]byte, 1)
-	for {
-		select {
-		case <-in:
-			return
-		default:
-			os.Stdin.Read(b)
-			fmt.Printf(">>> %v: ", b)
-			out <- string(b)
-		}
-	}
 }
