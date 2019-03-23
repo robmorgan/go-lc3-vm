@@ -118,14 +118,13 @@ func (c *CPU) Run() (err error) {
 
 					log.Println("========= DEBUG OUTPUT ====================")
 					log.Println(fmt.Sprintf("Register 0: 0x%04X", c.Reg[0]))
-					log.Println(fmt.Sprintf("Register 1: 0x%04X", c.Reg[0]))
-					log.Println(fmt.Sprintf("Register 2: 0x%04X", c.Reg[0]))
-					log.Println(fmt.Sprintf("Register 3: 0x%04X", c.Reg[0]))
-					log.Println(fmt.Sprintf("Register 4: 0x%04X", c.Reg[0]))
-					log.Println(fmt.Sprintf("Register 5: 0x%04X", c.Reg[0]))
-					log.Println(fmt.Sprintf("Register 6: 0x%04X", c.Reg[0]))
-					log.Println(fmt.Sprintf("Register 7: 0x%04X", c.Reg[0]))
-					log.Println(fmt.Sprintf("Register 8: 0x%04X", c.Reg[0]))
+					log.Println(fmt.Sprintf("Register 1: 0x%04X", c.Reg[1]))
+					log.Println(fmt.Sprintf("Register 2: 0x%04X", c.Reg[2]))
+					log.Println(fmt.Sprintf("Register 3: 0x%04X", c.Reg[3]))
+					log.Println(fmt.Sprintf("Register 4: 0x%04X", c.Reg[4]))
+					log.Println(fmt.Sprintf("Register 5: 0x%04X", c.Reg[5]))
+					log.Println(fmt.Sprintf("Register 6: 0x%04X", c.Reg[6]))
+					log.Println(fmt.Sprintf("Register 7: 0x%04X", c.Reg[7]))
 					log.Println(fmt.Sprintf("PC: 0x%04X", c.PC))
 					log.Println(fmt.Sprintf("Inst: 0x%04X Op: %d", instr, op))
 					termbox.Flush()
@@ -298,11 +297,11 @@ func (c *CPU) EmulateInstruction() (err error) {
 		if bit11 == 1 {
 			PCoffset11 := extract2C(instr, 10, 0)
 			pc += PCoffset11
-			//log.Println(fmt.Sprintf("0x%04x: JSR BIT1 0x%04x,%d", c.PC, c.Reg[7], PCoffset11))
+			//log.Println(fmt.Sprintf("0x%04x: JSR BIT1 0x%04x,0x%04x", c.PC, c.Reg[7], pc))
 		} else {
-			baseR := extract2C(instr, 8, 6)
+			baseR := extract1C(instr, 8, 6)
 			pc = c.Reg[baseR]
-			//log.Println(fmt.Sprintf("0x%04x: JSR BASER 0x%04x,%d", c.PC, c.Reg[7], baseR))
+			//log.Println(fmt.Sprintf("0x%04x: JSR BASER 0x%04x,0x%04x", c.PC, c.Reg[7], baseR))
 		}
 	case OpLDR:
 		dr := extract1C(instr, 11, 9)
@@ -310,6 +309,7 @@ func (c *CPU) EmulateInstruction() (err error) {
 		offset6 := extract2C(instr, 5, 0)
 		c.Reg[dr] = c.ReadMemory(c.Reg[baseR] + offset6)
 		c.SetCC(c.Reg[dr])
+		//log.Println(fmt.Sprintf("0x%04x: LDR R%d,R%d 0x%04x", c.PC, dr, baseR, offset6))
 	case OpLEA:
 		dr := extract1C(instr, 11, 9)
 		PCoffset9 := extract2C(instr, 8, 0)
@@ -371,45 +371,13 @@ func (c *CPU) EmulateInstruction() (err error) {
 			//}
 
 			var chr uint16
-			var i uint16 = 1
-			//var byteArr []byte
+			var i uint16
 			for ok := true; ok; ok = (chr != 0x0) {
 				chr = c.Memory[address+i] & 0xFFFF
-				//chr += c.Memory[address+i+1]
-
-				//log.Println("char is: %d", chr)
-				//log.Println(fmt.Sprintf("Address: 0x%04x", address+i))
-
-				//fmt.Printf("\t%2d: %c\n", i, rune(r))
-				//chr = slab[i]
-				//  c.ReadMemory(address + i)
-				//	chr = c.Memory[address+i]
-				//	fmt.Println("loop called chr: %d", chr)
-				//fmt.Printf("XXX:%c", rune(chr))
-				//fmt.Printf("\t%2d: %c\n", i, rune(r))
-				//printBytes(rune(chr))
-				//fmt.Printf("\t%2d: %U %c\n", i, chr, rune(chr))
 				fmt.Printf("%c", rune(chr))
-
-				//fmt.Printf("Byte %3d: %3d %c\n", i, chr, chr)
-				//fmt.Printf("\t%2d: %U %c\n", i, chr, chr)
-
-				//fmt.Sprintln("%c %U", chr, chr)
-
 				i++
 			}
-
-			fmt.Printf("\n")
-			//fmt.Println("Terminating VM")
-			//os.Exit(1)
-			//for c > 0 {
-			//	chr := rune(c)
-			//	fmt.Printf("%c", chr)
-			//}
-			//for c {
-		//fmt.Printf("%s", c)
-		//	c++
-		//}
+			//fmt.Printf("\n")
 		case TrapHALT:
 			log.Println("HALT")
 			os.Exit(1)
