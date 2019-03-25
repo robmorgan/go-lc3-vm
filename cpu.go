@@ -117,14 +117,14 @@ func (c *CPU) Run() (err error) {
 					op := instr >> 12
 
 					log.Println("========= DEBUG OUTPUT ====================")
-					log.Println(fmt.Sprintf("Register 0: 0x%04X", c.Reg[0]))
-					log.Println(fmt.Sprintf("Register 1: 0x%04X", c.Reg[1]))
-					log.Println(fmt.Sprintf("Register 2: 0x%04X", c.Reg[2]))
-					log.Println(fmt.Sprintf("Register 3: 0x%04X", c.Reg[3]))
-					log.Println(fmt.Sprintf("Register 4: 0x%04X", c.Reg[4]))
-					log.Println(fmt.Sprintf("Register 5: 0x%04X", c.Reg[5]))
-					log.Println(fmt.Sprintf("Register 6: 0x%04X", c.Reg[6]))
-					log.Println(fmt.Sprintf("Register 7: 0x%04X", c.Reg[7]))
+					log.Println(fmt.Sprintf("R0: 0x%04X", c.Reg[0]))
+					log.Println(fmt.Sprintf("R1: 0x%04X", c.Reg[1]))
+					log.Println(fmt.Sprintf("R2: 0x%04X", c.Reg[2]))
+					log.Println(fmt.Sprintf("R3: 0x%04X", c.Reg[3]))
+					log.Println(fmt.Sprintf("R4: 0x%04X", c.Reg[4]))
+					log.Println(fmt.Sprintf("R5: 0x%04X", c.Reg[5]))
+					log.Println(fmt.Sprintf("R6: 0x%04X", c.Reg[6]))
+					log.Println(fmt.Sprintf("R7: 0x%04X", c.Reg[7]))
 					log.Println(fmt.Sprintf("PC: 0x%04X", c.PC))
 					log.Println(fmt.Sprintf("Inst: 0x%04X Op: %d", instr, op))
 					termbox.Flush()
@@ -253,14 +253,14 @@ func (c *CPU) EmulateInstruction() (err error) {
 		bit5 := extract1C(instr, 5, 5)
 		if bit5 == 1 {
 			imm5 := extract2C(instr, 4, 0)
-			//log.Println("0x%04x: ADD R%d,R%d,#%d\n", c.PC, dr, sr1, int16(imm5))
+			//log.Println(fmt.Sprintf("0x%04x: ADD R%d,R%d,#%d\n", c.PC, dr, sr1, int16(imm5)))
 			c.Reg[dr] = c.Reg[sr1] + imm5
 		} else {
 			sr2 := extract1C(instr, 2, 0)
-			//log.Println("0x%04x: ADD R%d,R%d,#%d\n", c.PC, dr, sr1, sr2)
+			//log.Println(fmt.Sprintf("0x%04x: ADD R%d,R%d,R%d\n", c.PC, dr, sr1, sr2))
 			c.Reg[dr] = c.Reg[sr1] + c.Reg[sr2]
 		}
-		c.SetCC(dr)
+		c.SetCC(c.Reg[dr])
 	case OpAND:
 		dr := extract1C(instr, 11, 9)
 		sr1 := extract1C(instr, 8, 6)
@@ -344,7 +344,7 @@ func (c *CPU) EmulateInstruction() (err error) {
 			c.Reg[0] = uint16(c.keyBuffer[0])
 			//log.Fatalf("Got key code: 0x%04X", ascii)
 		case TrapOUT:
-			fmt.Println("trapout")
+			//fmt.Println("trapout")
 			chr := rune(c.Reg[0])
 			fmt.Printf("%c", chr)
 			//fmt.Printf("%c\n", chr)

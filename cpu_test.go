@@ -66,6 +66,36 @@ func TestCPUBrzInstr(t *testing.T) {
 	}
 }
 
+func TestCPUBRpInstr(t *testing.T) {
+	m := [65536]uint16{}
+	m[0x3328] = 0x1261 // ADD R1, R1, #1
+	m[0x3329] = 0x1002 // ADD R0, R0, R2
+	m[0x332A] = 0x03FD // BRp 0x3328
+
+	cpu := initCPU(m)
+	cpu.Reg[0] = 0x1B7B
+	cpu.Reg[2] = 0xFFF0
+	cpu.Reg[5] = 0x3017
+	cpu.Reg[6] = 0x3FE7
+	cpu.Reg[7] = 0x32CA
+	cpu.PC = 0x3328
+
+	// run the necessary amount of clock cycles
+	for i := 0; i < 1319; i++ {
+		//fmt.Println("in loop")
+		cpu.Step()
+	}
+
+	if cpu.CondRegister.N != true {
+		dumpCPUState(t, cpu)
+		t.Errorf("c.CondRegister.N %v expected %v", cpu.CondRegister.N, true)
+	}
+	if cpu.Reg[1] != 0x01B8 {
+		dumpCPUState(t, cpu)
+		t.Errorf("c.Reg[1] %v expected %v", cpu.Reg[1], 0x01B8)
+	}
+}
+
 func TestCPUJmpInstr(t *testing.T) {
 	//m := [65536]uint16{}
 	//m[0x3000] = 0x5260 // AND R1, R1, #0
@@ -112,12 +142,9 @@ func TestCPUAndInstr(t *testing.T) {
 func TestCPUJsrInstr(t *testing.T) {
 	m := [65536]uint16{}
 	m[0x32C6] = 0x486D // JSR 0x3334
-	m[0x3001] = 0x1020 // ADD R0, R0, #0
-	m[0x3334] = 0x1020 // ADD R0, R0, #0
 
 	cpu := initCPU(m)
 	cpu.PC = 0x32C6
-	dumpCPUState(t, cpu)
 	cpu.Step()
 
 	if cpu.PC != 0x3334 {
@@ -176,17 +203,34 @@ func initCPU(m [65536]uint16) *CPU {
 	return cpu
 }
 
+func dumpCPUStateE(c *CPU) {
+	fmt.Println(fmt.Sprintf("======== CPU STATE ==========="))
+	fmt.Println(fmt.Sprintf("R0: 0x%04X", c.Reg[0]))
+	fmt.Println(fmt.Sprintf("R1: 0x%04X", c.Reg[1]))
+	fmt.Println(fmt.Sprintf("R2: 0x%04X", c.Reg[2]))
+	fmt.Println(fmt.Sprintf("R3: 0x%04X", c.Reg[3]))
+	fmt.Println(fmt.Sprintf("R4: 0x%04X", c.Reg[4]))
+	fmt.Println(fmt.Sprintf("R5: 0x%04X", c.Reg[5]))
+	fmt.Println(fmt.Sprintf("R6: 0x%04X", c.Reg[6]))
+	fmt.Println(fmt.Sprintf("R7: 0x%04X", c.Reg[7]))
+	fmt.Println(fmt.Sprintf("N: %v", c.CondRegister.N))
+	fmt.Println(fmt.Sprintf("Z: %v", c.CondRegister.Z))
+	fmt.Println(fmt.Sprintf("P: %v", c.CondRegister.P))
+	fmt.Println(fmt.Sprintf("PC: 0x%04X", c.PC))
+	//t.Logf("Inst: 0x%04X Op: %d", instr, op)
+}
+
 // This method dumps the current state of the CPU in the event of a test failure.
 func dumpCPUState(t *testing.T, c *CPU) {
 	t.Logf("======== CPU STATE ===========")
-	t.Logf("Register 0: 0x%04X", c.Reg[0])
-	t.Logf("Register 1: 0x%04X", c.Reg[1])
-	t.Logf("Register 2: 0x%04X", c.Reg[2])
-	t.Logf("Register 3: 0x%04X", c.Reg[3])
-	t.Logf("Register 4: 0x%04X", c.Reg[4])
-	t.Logf("Register 5: 0x%04X", c.Reg[5])
-	t.Logf("Register 6: 0x%04X", c.Reg[6])
-	t.Logf("Register 7: 0x%04X", c.Reg[7])
+	t.Logf("R0: 0x%04X", c.Reg[0])
+	t.Logf("R1: 0x%04X", c.Reg[1])
+	t.Logf("R2: 0x%04X", c.Reg[2])
+	t.Logf("R3: 0x%04X", c.Reg[3])
+	t.Logf("R4: 0x%04X", c.Reg[4])
+	t.Logf("R5: 0x%04X", c.Reg[5])
+	t.Logf("R6: 0x%04X", c.Reg[6])
+	t.Logf("R7: 0x%04X", c.Reg[7])
 	t.Logf("N: %v", c.CondRegister.N)
 	t.Logf("Z: %v", c.CondRegister.Z)
 	t.Logf("P: %v", c.CondRegister.P)
