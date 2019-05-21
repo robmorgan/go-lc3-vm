@@ -10,8 +10,12 @@ https://en.wikipedia.org/wiki/LC-3
 
 - [x] Fix Trap Routines for displaying output.
 - [x] Fixed STI OpCode
-- [ ] Migrate to Termbox for key input
+- [x] Migrate to Termbox for key input
 - [ ] Add a flag for debug output
+
+# Development Resources
+
+- https://wchargin.github.io/lc3web/
 
 # LICENSE
 
