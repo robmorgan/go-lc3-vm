@@ -4,7 +4,7 @@
 
 This project is a really simple [LC-3](https://en.wikipedia.org/wiki/LC-3) VM written in Go. LC-3 or Little Computer 3 is
 a fictional computer system that is designed to teach students how to code in assembly language. My VM is originally [based
-on an article](https://justinmeiners.github.io/lc3-vm/) written by Justin Meiners.
+on an article](https://justinmeiners.github.io/lc3-vm/) written by Justin Meiners and Ryan Pendleton.
 
 ## Current Status
 
