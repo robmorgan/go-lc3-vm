@@ -335,41 +335,15 @@ func (c *CPU) EmulateInstruction() (err error) {
 		trapCode := instr & 0xFF
 		switch trapCode {
 		case TrapGETC:
-			//log.Fatalf("GETC Trap code not implemented: 0x%04X", instr)
-			// read a single ASCII character
-			//ascii, _, _ := getChar()
-			//c.Reg[0] = uint16(ascii)
-			//log.Fatalf("Got keycode: %v", c.keyBuffer[0])
-			//fmt.Println("TrapGETC")
-			c.Reg[0] = uint16(c.keyBuffer[0])
-			//log.Fatalf("Got key code: 0x%04X", ascii)
+			if len(c.keyBuffer) > 0 {
+				// pop one key from the queue (x, a = a[0], a[1:])
+				c.Reg[0], c.keyBuffer = uint16(c.keyBuffer[0]), c.keyBuffer[1:]
+			}
 		case TrapOUT:
-			//fmt.Println("trapout")
 			chr := rune(c.Reg[0])
 			fmt.Printf("%c", chr)
-			//fmt.Printf("%c\n", chr)
 		case TrapPUTS:
-			//fmt.Println("TrapPUTS")
 			address := c.Reg[0]
-			//	log.Println(fmt.Sprintf("0x%04x: PUTS Address: 0x%04x %c", c.PC, address, c.ReadMemory(address)))
-
-			//	for i, r := range slab {
-			//		if r != unicode.ReplacementChar {
-			//			// Print the position of the rune's start byte in the string
-			//			// and the value of the rune as a Unicode code point.
-			//			fmt.Printf("\t%2d: %c\n", i, rune(r))
-			//		} else {
-			//			// A byte that doesn't form a part of a rune was detected within the string.
-			//			// Print the position of the byte in the string
-			//			// and the integer value of the byte in hexadecimal.
-			//			fmt.Printf("\t%2d: %02X    (not a rune)\n", i, slab[i])
-			//		}
-			//	}
-
-			//for _, num := range slab {
-			//	fmt.Println("sum:", rune(num))
-			//}
-
 			var chr uint16
 			var i uint16
 			for ok := true; ok; ok = (chr != 0x0) {
@@ -377,7 +351,6 @@ func (c *CPU) EmulateInstruction() (err error) {
 				fmt.Printf("%c", rune(chr))
 				i++
 			}
-			//fmt.Printf("\n")
 		case TrapHALT:
 			log.Println("HALT")
 			os.Exit(1)
