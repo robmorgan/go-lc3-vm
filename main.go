@@ -18,7 +18,7 @@ func main() {
 	}
 	defer termbox.Close()
 
-	log.Printf("Starting LC3-VM")
+	log.Printf("Starting LC3-VM by Rob Morgan")
 
 	// load the ROM file
 	path := "rom/2048.obj"
