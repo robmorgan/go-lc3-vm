@@ -20,11 +20,11 @@ func main() {
 
 	log.Printf("Starting LC3-VM by Rob Morgan")
 
-	// load the ROM file
-	path := "rom/2048.obj"
+	// load the program file
+	path := "prog/2048.obj"
 	log.Printf("Loading Program: %s", path)
 
-	// read the rom file into a buffer
+	// read the program file into a buffer
 	mem, err := RetrieveROM(path)
 	if err != nil {
 		panic(err)
