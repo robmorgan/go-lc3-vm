@@ -132,8 +132,6 @@ func (c *CPU) Run() (err error) {
 						log.Println(fmt.Sprintf("PC: 0x%04X", c.PC))
 						log.Println(fmt.Sprintf("Inst: 0x%04X Op: %d", instr, op))
 					}
-					termbox.Flush()
-					getChar()
 					return
 				}
 			}
@@ -164,12 +162,11 @@ func (c *CPU) Step() (err error) {
 	// Store any keypresses since last time.
 	c.ProcessInput()
 
-	//fmt.Println("PC: ", c.PC)
+	// Process the current instruction
 	c.EmulateInstruction()
-	//Increment MCC
+
+	// Increment MCC
 	c.Memory[0xFFFF]++
-	termbox.Flush()
-	//time.Sleep(1 * time.Second)
 	return
 }
 
