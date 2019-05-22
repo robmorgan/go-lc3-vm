@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"runtime/pprof"
 
 	"github.com/nsf/termbox-go"
 )
@@ -20,7 +21,21 @@ func main() {
 
 	// parse flags
 	debugPtr := flag.Bool("debug", false, "enable debug mode")
+	cpuProfile := flag.String("cpuprofile", "", "write cpu profile to `file`")
 	flag.Parse()
+
+	// enable the profiler
+	if *cpuProfile != "" {
+		f, err := os.Create(*cpuProfile)
+		if err != nil {
+			log.Fatal("could not create CPU profile: ", err)
+		}
+		defer f.Close()
+		if err := pprof.StartCPUProfile(f); err != nil {
+			log.Fatal("could not start CPU profile: ", err)
+		}
+		defer pprof.StopCPUProfile()
+	}
 
 	// load the program file
 	path := getPath()
@@ -121,15 +136,9 @@ func RetrieveROM(filename string) ([65536]uint16, error) {
 
 	buffer := bytes.NewBuffer(byteArr)
 
-	//bufr := bufio.NewReader(file)
-	//_, err = bufr.Read(byteArr)
-
-	//reader := bytes.NewReader(byteArr)
-
 	for i := origin; i < math.MaxUint16; i++ {
 		var val uint16
 		binary.Read(buffer, binary.BigEndian, &val)
-		//fmt.Println("in loop", val, "writing to:", i)
 		m[i] = val
 	}
 
