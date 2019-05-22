@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
+	"flag"
 	"log"
 	"math"
 	"os"
@@ -17,7 +18,9 @@ func main() {
 	}
 	defer termbox.Close()
 
-	log.Printf("Starting LC3-VM by Rob Morgan")
+	// parse flags
+	debugPtr := flag.Bool("debug", false, "enable debug mode")
+	flag.Parse()
 
 	// load the program file
 	path := getPath()
@@ -36,6 +39,10 @@ func main() {
 	log.Println("Boot VM")
 	termbox.Flush()
 	cpu := NewCPU()
+	if *debugPtr {
+		log.Printf("Enabling debug mode")
+		cpu.DebugMode = true
+	}
 	cpu.Memory = mem
 	cpu.Reset()
 
@@ -45,8 +52,8 @@ func main() {
 
 func getPath() string {
 	var arg string
-	args := os.Args[1:]
-	if len(args) == 1 {
+	args := flag.Args()
+	if len(args) > 0 {
 		arg = args[0]
 	}
 

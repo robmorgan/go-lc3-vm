@@ -32,6 +32,7 @@ type CPU struct {
 
 	TimerStarted bool
 	TimerStart   time.Time
+	DebugMode    bool
 
 	OP       uint16   // current opcode
 	runState RunState // current state
@@ -109,24 +110,28 @@ func (c *CPU) Run() (err error) {
 		select {
 		case ev := <-eventQueue:
 			if ev.Type == termbox.EventKey {
-				log.Println(fmt.Sprintf("Key pressed: %d", ev.Ch))
+				if c.DebugMode {
+					log.Println(fmt.Sprintf("Key pressed: %d", ev.Ch))
+				}
 				c.keyBuffer = append(c.keyBuffer, ev.Ch)
 				switch {
 				case ev.Ch == 'q' || ev.Key == termbox.KeyEsc || ev.Key == termbox.KeyCtrlC || ev.Key == termbox.KeyCtrlD:
 					instr := c.ReadMemory(c.PC)
 					op := instr >> 12
 
-					log.Println("========= DEBUG OUTPUT ====================")
-					log.Println(fmt.Sprintf("R0: 0x%04X", c.Reg[0]))
-					log.Println(fmt.Sprintf("R1: 0x%04X", c.Reg[1]))
-					log.Println(fmt.Sprintf("R2: 0x%04X", c.Reg[2]))
-					log.Println(fmt.Sprintf("R3: 0x%04X", c.Reg[3]))
-					log.Println(fmt.Sprintf("R4: 0x%04X", c.Reg[4]))
-					log.Println(fmt.Sprintf("R5: 0x%04X", c.Reg[5]))
-					log.Println(fmt.Sprintf("R6: 0x%04X", c.Reg[6]))
-					log.Println(fmt.Sprintf("R7: 0x%04X", c.Reg[7]))
-					log.Println(fmt.Sprintf("PC: 0x%04X", c.PC))
-					log.Println(fmt.Sprintf("Inst: 0x%04X Op: %d", instr, op))
+					if c.DebugMode {
+						log.Println("========= DEBUG OUTPUT ====================")
+						log.Println(fmt.Sprintf("R0: 0x%04X", c.Reg[0]))
+						log.Println(fmt.Sprintf("R1: 0x%04X", c.Reg[1]))
+						log.Println(fmt.Sprintf("R2: 0x%04X", c.Reg[2]))
+						log.Println(fmt.Sprintf("R3: 0x%04X", c.Reg[3]))
+						log.Println(fmt.Sprintf("R4: 0x%04X", c.Reg[4]))
+						log.Println(fmt.Sprintf("R5: 0x%04X", c.Reg[5]))
+						log.Println(fmt.Sprintf("R6: 0x%04X", c.Reg[6]))
+						log.Println(fmt.Sprintf("R7: 0x%04X", c.Reg[7]))
+						log.Println(fmt.Sprintf("PC: 0x%04X", c.PC))
+						log.Println(fmt.Sprintf("Inst: 0x%04X Op: %d", instr, op))
+					}
 					termbox.Flush()
 					getChar()
 					return

@@ -16,7 +16,7 @@ on an article](https://justinmeiners.github.io/lc3-vm/) written by Justin Meiner
 - [x] Fix Trap Routines for displaying output.
 - [x] Fixed STI OpCode
 - [x] Migrate to Termbox for key input
-- [ ] Add a flag for debug output
+- [x] Add a flag for debug output
 - [x] Add a flag to specify the target program
 - [ ] Fix failing unit tests
 
