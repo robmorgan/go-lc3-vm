@@ -8,22 +8,32 @@ on an article](https://justinmeiners.github.io/lc3-vm/) written by Justin Meiner
 
 ## Current Status
 
-- The VM is now able to run [2048](https://github.com/rpendleton/lc3-2048) by Ryan Pendleton.
-- [Rogue](https://github.com/justinmeiners/lc3-rogue) doesn't get past the first screen.
+The VM is now able to execute the following programs:
+
+- [2048](https://github.com/rpendleton/lc3-2048) by Ryan Pendleton
+- [Rogue](https://github.com/justinmeiners/lc3-rogue) by Justin Meiners
 
 ## TODO
 
-- [x] Fix Trap Routines for displaying output.
-- [x] Fixed STI OpCode
-- [x] Migrate to Termbox for key input
-- [x] Add a flag for debug output
-- [x] Add a flag to specify the target program
+- [ ] Fix 199% CPU issue when running Rogue
+- [ ] Fix issue where Rogue skips to next level
 - [ ] Fix failing unit tests
+
+## Changelog
+
+- Fixed Trap Routines for displaying output.
+- Fixed the STI Op Code.
+- Migrated to Termbox for display and key input
+- Added a flag for verbose debug output
+- Added a flag to specify the target program
+- Added support for CPU profiling
 
 ## Development Resources
 
-- https://wchargin.github.io/lc3web/
+These resources came in handy when developing this VM:
+
+- https://wchargin.github.io/lc3web/: I could load the programs and compare the expected behaviour against my VM.
 
 ## LICENSE
 
-MIT
+MIT, See the LICENSE file.
