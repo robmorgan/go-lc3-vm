@@ -43,9 +43,15 @@ func main() {
 		log.Printf("Enabling debug mode")
 		cpu.DebugMode = true
 	}
-	cpu.Memory = mem
-	cpu.Reset()
 
+	// init memory
+	cpu.Memory = mem
+
+	// init the input loop
+	go processInput(cpu)
+
+	// reset the CPU and start execution
+	cpu.Reset()
 	cpu.Run()
 	log.Println("Terminating VM")
 }

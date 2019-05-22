@@ -1,42 +1,54 @@
 package main
 
-import "github.com/pkg/term"
+import (
+	"fmt"
+	"log"
 
-// Returns either an ascii code, or (if input is an arrow) a Javascript key code.
-func getChar() (ascii int, keyCode int, err error) {
-	t, _ := term.Open("/dev/tty")
-	term.RawMode(t)
-	bytes := make([]byte, 3)
+	"github.com/nsf/termbox-go"
+)
 
-	var numRead int
-	numRead, err = t.Read(bytes)
-	if err != nil {
-		return
-	}
-	if numRead == 3 && bytes[0] == 27 && bytes[1] == 91 {
-		// Three-character control sequence, beginning with "ESC-[".
-
-		// Since there are no ASCII codes for arrow keys, we use
-		// Javascript key codes.
-		if bytes[2] == 65 {
-			// Up
-			keyCode = 38
-		} else if bytes[2] == 66 {
-			// Down
-			keyCode = 40
-		} else if bytes[2] == 67 {
-			// Right
-			keyCode = 39
-		} else if bytes[2] == 68 {
-			// Left
-			keyCode = 37
+func processInput(cpu *CPU) (err error) {
+	eventQueue := make(chan termbox.Event)
+	go func() {
+		for {
+			eventQueue <- termbox.PollEvent()
 		}
-	} else if numRead == 1 {
-		ascii = int(bytes[0])
-	} else {
-		// Two characters read??
+	}()
+
+	for {
+		select {
+		case ev := <-eventQueue:
+			if ev.Type == termbox.EventKey {
+				if cpu.DebugMode {
+					log.Println(fmt.Sprintf("Key pressed: %d", ev.Ch))
+				}
+				cpu.keyBuffer = append(cpu.keyBuffer, ev.Ch)
+				switch {
+				case ev.Ch == 'q' || ev.Key == termbox.KeyEsc || ev.Key == termbox.KeyCtrlC || ev.Key == termbox.KeyCtrlD:
+					instr := cpu.ReadMemory(cpu.PC)
+					op := instr >> 12
+
+					// stop the CPU from executing
+					cpu.Stop()
+
+					if cpu.DebugMode {
+						log.Println("========= DEBUG OUTPUT ====================")
+						log.Println(fmt.Sprintf("R0: 0x%04X", cpu.Reg[0]))
+						log.Println(fmt.Sprintf("R1: 0x%04X", cpu.Reg[1]))
+						log.Println(fmt.Sprintf("R2: 0x%04X", cpu.Reg[2]))
+						log.Println(fmt.Sprintf("R3: 0x%04X", cpu.Reg[3]))
+						log.Println(fmt.Sprintf("R4: 0x%04X", cpu.Reg[4]))
+						log.Println(fmt.Sprintf("R5: 0x%04X", cpu.Reg[5]))
+						log.Println(fmt.Sprintf("R6: 0x%04X", cpu.Reg[6]))
+						log.Println(fmt.Sprintf("R7: 0x%04X", cpu.Reg[7]))
+						log.Println(fmt.Sprintf("PC: 0x%04X", cpu.PC))
+						log.Println(fmt.Sprintf("Inst: 0x%04X Op: %d", instr, op))
+					}
+					return
+				}
+			}
+		default:
+			// do nothing
+		}
 	}
-	t.Restore()
-	t.Close()
-	return
 }
