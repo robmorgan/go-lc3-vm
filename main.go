@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"log"
 	"math"
 	"os"
@@ -21,7 +20,10 @@ func main() {
 	log.Printf("Starting LC3-VM by Rob Morgan")
 
 	// load the program file
-	path := "prog/2048.obj"
+	path := getPath()
+	if len(path) == 0 {
+		log.Fatalln("No program file specified or found")
+	}
 	log.Printf("Loading Program: %s", path)
 
 	// read the program file into a buffer
@@ -31,14 +33,33 @@ func main() {
 	}
 
 	// init the CPU
-	fmt.Println("Boot VM")
+	log.Println("Boot VM")
 	termbox.Flush()
 	cpu := NewCPU()
 	cpu.Memory = mem
 	cpu.Reset()
 
 	cpu.Run()
-	fmt.Println("Exiting")
+	log.Println("Terminating VM")
+}
+
+func getPath() string {
+	var arg string
+	args := os.Args[1:]
+	if len(args) == 1 {
+		arg = args[0]
+	}
+
+	info, err := os.Stat(arg)
+	if err != nil {
+		return ""
+	}
+
+	if info.IsDir() {
+		log.Fatalln("A program file must be specified")
+	}
+
+	return arg
 }
 
 func RetrieveROM(filename string) ([65536]uint16, error) {

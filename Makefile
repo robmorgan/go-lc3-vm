@@ -18,4 +18,4 @@ clean:
 				rm -f $(BINARY_UNIX)
 run:
 				$(GOBUILD) -o $(BINARY_NAME) -v ./...
-				./$(BINARY_NAME)
+				./$(BINARY_NAME) prog/2048.obj

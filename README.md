@@ -17,7 +17,7 @@ on an article](https://justinmeiners.github.io/lc3-vm/) written by Justin Meiner
 - [x] Fixed STI OpCode
 - [x] Migrate to Termbox for key input
 - [ ] Add a flag for debug output
-- [ ] Add a flag to specify the target program
+- [x] Add a flag to specify the target program
 - [ ] Fix failing unit tests
 
 ## Development Resources
