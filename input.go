@@ -38,8 +38,6 @@ func processInput(cpu *CPU) (err error) {
 				}
 				return
 			}
-		default:
-			// do nothing
 		}
 	}
 }

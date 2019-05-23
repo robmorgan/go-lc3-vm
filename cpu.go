@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 	"time"
 )
 
@@ -118,7 +117,7 @@ func (c *CPU) Reset() {
 func (c *CPU) Step() (err error) {
 	c.runState = RunStateRunning
 
-	// Store any keypresses since last time.
+	// Process any key presses since last time
 	c.ProcessInput()
 
 	// Process the current instruction
@@ -179,6 +178,10 @@ func (c *CPU) EmulateInstruction() (err error) {
 
 	instr := c.ReadMemory(c.PC)
 	op := instr >> 12
+
+	if c.DebugMode {
+		log.Println("Op code: ", op)
+	}
 
 	// process the current opcode
 	switch op {
@@ -303,7 +306,7 @@ func (c *CPU) EmulateInstruction() (err error) {
 					break
 				}
 			}
-			// pop one key from the queue (x, a = a[0], a[1:])
+			// pop one key from the queue (x, a = a[0], a[1:]) into register 0
 			c.Reg[0], c.keyBuffer = uint16(c.keyBuffer[0]), c.keyBuffer[1:]
 		case TrapOUT:
 			chr := rune(c.Reg[0])
@@ -318,8 +321,10 @@ func (c *CPU) EmulateInstruction() (err error) {
 				i++
 			}
 		case TrapHALT:
-			log.Println("HALT")
-			os.Exit(1)
+			if c.DebugMode {
+				log.Println("HALT")
+			}
+			c.Stop()
 		default:
 			log.Fatalf("Trap code not implemented: 0x%04X", instr)
 		}
