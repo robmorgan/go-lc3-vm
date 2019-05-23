@@ -15,7 +15,7 @@ The VM is now able to execute the following programs:
 
 ## TODO
 
-- [ ] Fix 199% CPU issue when running Rogue
+- [ ] Fix 100% CPU issue when running programs
 - [ ] Fix failing unit tests
 
 ## Changelog
