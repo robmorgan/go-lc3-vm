@@ -16,7 +16,6 @@ The VM is now able to execute the following programs:
 ## TODO
 
 - [ ] Fix 199% CPU issue when running Rogue
-- [ ] Fix issue where Rogue skips to next level
 - [ ] Fix failing unit tests
 
 ## Changelog
@@ -27,6 +26,7 @@ The VM is now able to execute the following programs:
 - Added a flag for verbose debug output
 - Added a flag to specify the target program
 - Added support for CPU profiling
+- Fixed an issue where GETC was not waiting for input
 
 ## Development Resources
 

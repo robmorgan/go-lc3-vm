@@ -179,7 +179,6 @@ func (c *CPU) EmulateInstruction() (err error) {
 
 	instr := c.ReadMemory(c.PC)
 	op := instr >> 12
-	//fmt.Printf("Received Inst:0x%04x Op:%d\n", instr, op)
 
 	// process the current opcode
 	switch op {
@@ -189,18 +188,20 @@ func (c *CPU) EmulateInstruction() (err error) {
 		p := extract1C(instr, 9, 9) == 1
 		PCoffset9 := extract2C(instr, 8, 0)
 
-		brString := fmt.Sprintf("0x%04x: BR", c.PC)
-		if n {
-			brString += fmt.Sprintf("n")
+		if c.DebugMode {
+			brString := fmt.Sprintf("0x%04x: BR", c.PC)
+			if n {
+				brString += fmt.Sprintf("n")
+			}
+			if z {
+				brString += fmt.Sprintf("z")
+			}
+			if p {
+				brString += fmt.Sprintf("p")
+			}
+			brString += fmt.Sprintf(" #%d\n", int16(PCoffset9))
+			log.Println(brString)
 		}
-		if z {
-			brString += fmt.Sprintf("z")
-		}
-		if p {
-			brString += fmt.Sprintf("p")
-		}
-		brString += fmt.Sprintf(" #%d\n", int16(PCoffset9))
-		//log.Println(brString)
 
 		if (n && c.CondRegister.N) || (z && c.CondRegister.Z) || (p && c.CondRegister.P) {
 			pc += PCoffset9
@@ -296,10 +297,14 @@ func (c *CPU) EmulateInstruction() (err error) {
 		trapCode := instr & 0xFF
 		switch trapCode {
 		case TrapGETC:
-			if len(c.keyBuffer) > 0 {
-				// pop one key from the queue (x, a = a[0], a[1:])
-				c.Reg[0], c.keyBuffer = uint16(c.keyBuffer[0]), c.keyBuffer[1:]
+			// block until a key is pressed
+			for {
+				if len(c.keyBuffer) > 0 {
+					break
+				}
 			}
+			// pop one key from the queue (x, a = a[0], a[1:])
+			c.Reg[0], c.keyBuffer = uint16(c.keyBuffer[0]), c.keyBuffer[1:]
 		case TrapOUT:
 			chr := rune(c.Reg[0])
 			fmt.Printf("%c", chr)
@@ -359,9 +364,8 @@ func isNegative(data uint16) bool {
 }
 
 func extract1C(inst uint16, hi, lo int) uint16 {
-	//fmt.Printf("Inst %04x %d %d ", inst, hi, lo)
 	if hi >= 16 || hi < 0 || lo >= 16 || lo < 0 {
-		fmt.Println("Argument out of bounds")
+		log.Println("Argument out of bounds")
 	}
 
 	//Build mask
@@ -388,7 +392,6 @@ func extract1C(inst uint16, hi, lo int) uint16 {
 func extract2C(inst uint16, hi, lo int) uint16 {
 	field := extract1C(inst, hi, lo)
 
-	//fmt.Printf("Field %016b ", field)
 	if extract1C(field, hi, hi) == 1 {
 		//Build sign extension
 
@@ -401,7 +404,6 @@ func extract2C(inst uint16, hi, lo int) uint16 {
 		field = inst | mask
 
 	}
-	//fmt.Printf("Field %016b\n", field)
 
 	return field
 }
